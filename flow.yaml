@@ -1,0 +1,41 @@
+collections:
+  people:
+    # Each person document must conform to this schema
+    schema:
+      type: object
+      properties:
+        id: {type: integer}
+        name: {type: string}
+      required: [id, name]
+    key: [/id]
+  greetings:
+    schema:
+      type: object
+      properties:
+        id: {type: integer, description: 'The id of the person who this greeting is for'}
+        greeting: 
+          type: string, 
+          description: 'How to say hello, in keeping with nearly 50 years of programming tradition'
+      required: [id, greeting]
+    key: [/id]
+    derivation:
+      transform: 
+        sayHello:
+          source:
+            name: people
+          publish: 
+            lambda: typescript
+tests:
+  'test greeting':
+    # Adds documents to the people collection
+    - ingest:
+        collection: people
+        documents:
+          - {id: 1, name: Alice }
+          - {id: 2, name: Bobby }
+    # Asserts that the complete set of greetings documents matches these documents.
+    - verify:
+        collection: greetings
+        documents:
+          - {id: 1, greeting: 'Hello Alice!'}
+          - {id: 2, greeting: 'Hello Bobby!'}
