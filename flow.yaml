@@ -1,41 +1,35 @@
+# Collections each represent a dataset that may be continuously updated
 collections:
-  people:
-    # Each person document must conform to this schema
-    schema:
-      type: object
-      properties:
-        id: {type: integer}
-        name: {type: string}
-      required: [id, name]
+  temperature/sensors:
+    schema: schemas.yaml#/$defs/tempSensor
     key: [/id]
-  greetings:
-    schema:
-      type: object
-      properties:
-        id: {type: integer, description: 'The id of the person who this greeting is for'}
-        greeting: 
-          type: string, 
-          description: 'How to say hello, in keeping with nearly 50 years of programming tradition'
-      required: [id, greeting]
-    key: [/id]
+  temperature/readings:
+    schema:  schemas.yaml#/$defs/tempReadings
+    key: [/sensorId, /timestamp]
+  temperature/average-by-location:
+    schema: schemas.yaml#/$defs/locationTemps
+    key: [/sensorId]
     derivation:
-      transform: 
-        sayHello:
-          source:
-            name: people
-          publish: 
-            lambda: typescript
-tests:
-  'test greeting':
-    # Adds documents to the people collection
-    - ingest:
-        collection: people
-        documents:
-          - {id: 1, name: Alice }
-          - {id: 2, name: Bobby }
-    # Asserts that the complete set of greetings documents matches these documents.
-    - verify:
-        collection: greetings
-        documents:
-          - {id: 1, greeting: 'Hello Alice!'}
-          - {id: 2, greeting: 'Hello Bobby!'}
+      register:
+        schema: schemas.yaml#/$defs/averageTempsRegister
+        # All registers will start out with a default locationName. This allows us to publish
+        # aggregates based on readings that are received before the sensor information has been
+        # processed
+        initial: { locationName: null }
+
+      transform:
+        sensors:
+          # The sensors transform does not declare a shuffle key because the key of the sensors
+          # collection is already what we want here.
+          source: {name: temperature/sensors}
+          update: {lambda: typescript}
+          publish: {lambda: typescript}
+        readings:
+          source: {name: temperature/readings}
+          # The shuffle key determines the key of the register that's associated with each
+          # document, so we shuffle both sensors and readings on the sensor id, which allows 
+          # us to access state that's associated with each sensor
+          shuffle: {key: [/sensorId]}
+          update: {lambda: typescript}
+          publish: {lambda: typescript}
+          

@@ -1,0 +1,72 @@
+$defs:
+  tempSensor:
+    description: 'A sensor that produces a temperature reading'
+    type: object
+    properties:
+      id:
+        type: integer
+        description: 'unique id of the sensor'
+      locationName:
+        type: string 
+        description: 'human-readable name of the senor location'
+        examples: ['behind the couch']
+      location:
+        $ref: https://geojson.org/schema/Point.json
+        description: 'The precise geographic location of the sensor'
+    required: [id, locationName]
+  
+  tempReadings:
+    description: 'A reading of a temp from a sensor'
+    type: object 
+    properties:
+      sensorId:
+        type: integer
+        description: 'the id of the sensor producing the reading'
+      timestamp:
+        type: string
+        format: timestamp
+        description: 'An RFC-3339 formatted string holding the time of the reading'
+      tempC:
+        type: number
+        description: 'the temp in degrees celsius'
+    required: [sensorId, timestamp, tempC]
+  
+  locationTemps:
+    description: 'Average temperature information for a particular location'
+    type: object
+    properties:
+      sensorId: {type: integer}
+      locationName: {type: [string, 'null']}
+      averageTempC:
+        type: number
+      minTempC:
+        type: number
+      maxTempC:
+        type: number
+      lastReading:
+        type: string
+        format: timestamp
+        description: 'Timestamp of most recent reading for this named location'
+    required: [sensorId, locationName, averageTempC, minTempC, maxTempC, lastReading]
+  
+  averageTempsRegister:
+    type: object
+    properties:
+      numReadings:
+        type: number
+        reduce: {strategy: sum}
+      totalC:
+        type: number
+        reduce: {strategy: sum}
+      locationName: {type: [string, 'null']}
+      lastReading:
+        type: string
+        format: timestamp
+        reduce: {strategy: maximize}
+      minTempC:
+        type: number
+        reduce: {strategy: minimize}
+      maxTempC:
+        type: number
+        reduce: {strategy: maximize}
+    reduce: {strategy: merge}

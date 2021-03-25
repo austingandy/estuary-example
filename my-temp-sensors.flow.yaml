@@ -1,0 +1,15 @@
+import:
+  - ./flow.yaml
+endpoints: 
+  temperaturesSqlite:
+    sqlite:
+      path: temperatures.db
+      table: temperatures
+
+materializations: 
+  # Binds the greetings collection to the devSQLite endpoint, which will be
+  # updated in realtime as documents are added to the collection.
+  - source:
+      name: temperature/average-by-location
+    endpoint:
+      name: temperaturesSqlite
